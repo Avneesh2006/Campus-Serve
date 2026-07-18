@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 
-export type UserRole = "STUDENT" | "ADMIN";
+export type UserRole = "STUDENT" | "SUB_ADMIN" | "ADMIN" | "SUPER_ADMIN";
 
 export interface AdminUser {
   id: string;

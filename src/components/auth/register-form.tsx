@@ -1,26 +1,41 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import Link from "next/link";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, MailCheck } from "lucide-react";
 import { toast } from "sonner";
 
-import { registerSchema, type RegisterInput } from "@/lib/validations/auth";
+import {
+  registerSchema,
+  branchEnum,
+  BRANCH_LABELS,
+  type RegisterInput,
+} from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const BRANCH_OPTIONS = branchEnum.options;
+const SEMESTER_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export function RegisterForm() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [submittedEmail, setSubmittedEmail] = React.useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -42,27 +57,29 @@ export function RegisterForm() {
         return;
       }
 
-      toast.success("Account created! Signing you in...");
-
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        toast.info("Account created. Please sign in.");
-        router.push("/login");
-        return;
-      }
-
-      router.push("/dashboard");
-      router.refresh();
+      toast.success("Account created!");
+      setSubmittedEmail(data.email);
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (submittedEmail) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-4 text-center">
+        <MailCheck className="size-10 text-green-500" />
+        <p className="text-sm text-muted-foreground">
+          We&apos;ve sent a verification link to{" "}
+          <span className="font-medium text-foreground">{submittedEmail}</span>.
+          Please verify your college email before signing in.
+        </p>
+        <Button variant="brand" asChild className="mt-2">
+          <Link href="/login">Back to sign in</Link>
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -81,18 +98,91 @@ export function RegisterForm() {
         )}
       </div>
 
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="rollNumber">Roll number</Label>
+          <Input
+            id="rollNumber"
+            placeholder="21BCON123"
+            autoComplete="off"
+            aria-invalid={!!errors.rollNumber}
+            {...register("rollNumber")}
+          />
+          {errors.rollNumber && (
+            <p className="text-sm text-destructive">{errors.rollNumber.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="semester">Semester</Label>
+          <Controller
+            control={control}
+            name="semester"
+            render={({ field }) => (
+              <Select
+                value={field.value ? String(field.value) : undefined}
+                onValueChange={(v) => field.onChange(Number(v))}
+              >
+                <SelectTrigger id="semester" className="w-full" aria-invalid={!!errors.semester}>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SEMESTER_OPTIONS.map((sem) => (
+                    <SelectItem key={sem} value={String(sem)}>
+                      Semester {sem}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.semester && (
+            <p className="text-sm text-destructive">{errors.semester.message}</p>
+          )}
+        </div>
+      </div>
+
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="branch">Branch</Label>
+        <Controller
+          control={control}
+          name="branch"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="branch" className="w-full" aria-invalid={!!errors.branch}>
+                <SelectValue placeholder="Select your branch" />
+              </SelectTrigger>
+              <SelectContent>
+                {BRANCH_OPTIONS.map((branch) => (
+                  <SelectItem key={branch} value={branch}>
+                    {BRANCH_LABELS[branch]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.branch && (
+          <p className="text-sm text-destructive">{errors.branch.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="email">College email</Label>
         <Input
           id="email"
           type="email"
-          placeholder="you@college.edu"
+          placeholder="yourname@jecrc.ac.in"
           autoComplete="email"
           aria-invalid={!!errors.email}
           {...register("email")}
         />
-        {errors.email && (
+        {errors.email ? (
           <p className="text-sm text-destructive">{errors.email.message}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Only JECRC college email addresses are allowed.
+          </p>
         )}
       </div>
 

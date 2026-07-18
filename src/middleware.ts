@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { isAdminOrAbove } from "@/lib/roles";
 
 const authRoutes = ["/login", "/register", "/forgot-password"];
 const protectedPrefixes = ["/dashboard"];
@@ -25,7 +26,7 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAdminRoute && isLoggedIn && req.auth?.user?.role !== "ADMIN") {
+  if (isAdminRoute && isLoggedIn && !isAdminOrAbove(req.auth?.user?.role)) {
     return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }
 

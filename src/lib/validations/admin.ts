@@ -11,7 +11,7 @@ export const announcementSchema = z.object({
 
 export const updateAnnouncementSchema = announcementSchema.partial();
 
-export const roleEnum = z.enum(["STUDENT", "ADMIN"]);
+export const roleEnum = z.enum(["STUDENT", "SUB_ADMIN", "ADMIN", "SUPER_ADMIN"]);
 
 export const updateUserRoleSchema = z.object({
   role: roleEnum,

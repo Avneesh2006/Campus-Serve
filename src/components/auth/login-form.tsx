@@ -40,7 +40,11 @@ export function LoginForm() {
       });
 
       if (result?.error) {
-        toast.error("Invalid email or password");
+        if (result.code === "unverified-email") {
+          toast.error("Please verify your college email before signing in.");
+        } else {
+          toast.error("Invalid email or password");
+        }
         return;
       }
 

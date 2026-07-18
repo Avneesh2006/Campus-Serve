@@ -19,6 +19,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isAdminOrAbove } from "@/lib/roles";
 
 export const sidebarLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -44,10 +45,9 @@ export function SidebarNav({
   role?: string;
 }) {
   const pathname = usePathname();
-  const links =
-    role === "ADMIN"
-      ? [...sidebarLinks, { href: "/dashboard/admin", label: "Admin Panel", icon: ShieldCheck }]
-      : sidebarLinks;
+  const links = isAdminOrAbove(role)
+    ? [...sidebarLinks, { href: "/dashboard/admin", label: "Admin Panel", icon: ShieldCheck }]
+    : sidebarLinks;
 
   return (
     <nav className="flex flex-col gap-1 p-3">

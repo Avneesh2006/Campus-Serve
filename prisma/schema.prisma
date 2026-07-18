@@ -9,7 +9,23 @@ datasource db {
 
 enum Role {
   STUDENT
+  SUB_ADMIN
   ADMIN
+  SUPER_ADMIN
+}
+
+enum Branch {
+  CSE
+  CSE_AI
+  CSE_DS
+  CSE_CYBER_SECURITY
+  IT
+  AI_ML
+  ECE
+  ELECTRICAL
+  MECHANICAL
+  CIVIL
+  OTHER
 }
 
 enum DayOfWeek {
@@ -222,6 +238,10 @@ model User {
   collegeName   String?
   course        String?
   semester      Int?
+  rollNumber         String?   @unique
+  branch             Branch?
+  verificationToken  String?   @unique
+  verificationExpiry DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

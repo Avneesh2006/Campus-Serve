@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSession } from "next-auth/react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,15 +15,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAdminUsers, type AdminUser } from "@/hooks/use-admin-users";
+import { useAdminUsers, type AdminUser, type UserRole } from "@/hooks/use-admin-users";
 import { DeleteConfirmDialog } from "@/components/attendance/delete-confirm-dialog";
+import { assignableRoles, canManageRole } from "@/lib/roles";
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  STUDENT: "Student",
+  SUB_ADMIN: "Sub Admin",
+  ADMIN: "Admin",
+  SUPER_ADMIN: "Super Admin",
+};
 
 export function UserManagementTab() {
+  const { data: session } = useSession();
+  const actorRole = session?.user?.role;
+  const myAssignableRoles = assignableRoles(actorRole);
+
   const [query, setQuery] = React.useState("");
   const [role, setRole] = React.useState("all");
   const { users, isLoading, updateRole, deleteUser } = useAdminUsers({
     q: query || undefined,
-    role: role !== "all" ? (role as "STUDENT" | "ADMIN") : undefined,
+    role: role !== "all" ? (role as UserRole) : undefined,
   });
   const [deleting, setDeleting] = React.useState<AdminUser | null>(null);
 
@@ -51,7 +64,9 @@ export function UserManagementTab() {
           <SelectContent>
             <SelectItem value="all">All roles</SelectItem>
             <SelectItem value="STUDENT">Student</SelectItem>
+            <SelectItem value="SUB_ADMIN">Sub Admin</SelectItem>
             <SelectItem value="ADMIN">Admin</SelectItem>
+            <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -113,28 +128,42 @@ export function UserManagementTab() {
                       {user.collegeName || "—"}
                     </td>
                     <td className="px-4 py-2.5">
-                      <Select
-                        value={user.role}
-                        onValueChange={(v) => updateRole(user.id, v as "STUDENT" | "ADMIN")}
-                      >
-                        <SelectTrigger className="h-8 w-[110px]" size="sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="STUDENT">Student</SelectItem>
-                          <SelectItem value="ADMIN">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {canManageRole(actorRole, user.role) && myAssignableRoles.length > 0 ? (
+                        <Select
+                          value={user.role}
+                          onValueChange={(v) => updateRole(user.id, v as UserRole)}
+                        >
+                          <SelectTrigger className="h-8 w-[130px]" size="sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {/* Always include the user's current role so the trigger can display it,
+                                even if the actor isn't allowed to re-assign it away from that value. */}
+                            {!myAssignableRoles.includes(user.role) && (
+                              <SelectItem value={user.role}>{ROLE_LABELS[user.role]}</SelectItem>
+                            )}
+                            {myAssignableRoles.map((r) => (
+                              <SelectItem key={r} value={r}>
+                                {ROLE_LABELS[r]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge variant="outline">{ROLE_LABELS[user.role]}</Badge>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => setDeleting(user)}
-                      >
-                        Delete
-                      </Button>
+                      {canManageRole(actorRole, user.role) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleting(user)}
+                        >
+                          Delete
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 );
